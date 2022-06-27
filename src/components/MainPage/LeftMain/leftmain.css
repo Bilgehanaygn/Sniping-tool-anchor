@@ -1,0 +1,14 @@
+.menu-item {
+    font-size: 20px; 
+    margin:1vh;
+    display:flex;
+    flex-direction:row; 
+    align-items:center;
+    padding: 1.5vh;
+    border-radius: 1vh;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background-color: #e0a502;
+}

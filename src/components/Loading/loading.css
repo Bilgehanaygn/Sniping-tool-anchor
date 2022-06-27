@@ -1,0 +1,12 @@
+@keyframes enlight {
+    0% { opacity:0.5; }
+    50% { opacity:1; }
+    %100 { opacity:0.5; }
+}
+
+#logo-wrapper {
+    opacity:0.5;
+    z-index: 3;
+    position: relative;
+    animation: enlight 2.5s infinite linear;
+}

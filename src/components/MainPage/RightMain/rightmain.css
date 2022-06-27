@@ -1,0 +1,19 @@
+#trash-icon:hover {
+    cursor: pointer;    
+}
+
+#buy-button {
+    font-size: 25px;
+    text-align:center;
+    margin:2vh; 
+    background-color:#e0a502;
+    border-radius:1vh; 
+    font-weight:bold; 
+    padding:0.5vh;
+}
+
+#buy-button:hover {
+    background-color:#FFD700;
+    cursor: pointer;
+}
+
