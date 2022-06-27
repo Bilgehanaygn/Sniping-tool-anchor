@@ -1,14 +1,14 @@
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount} from '@solana/spl-token';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount, getAssociatedTokenAddress} from '@solana/spl-token';
 import * as ed25519 from 'ed25519-hd-key';
 import * as bip39 from 'bip39';
 import { PublicKey, Transaction, Keypair, Connection, clusterApiUrl, 
-    sendAndConfirmTransaction} from '@solana/web3.js';
+    sendAndConfirmTransaction, sendAndConfirmRawTransaction, LAMPORTS_PER_SOL, Signer} from '@solana/web3.js';
 import types from "../../../actions/types";
 import { ContextValue } from "../../../context/Context";
 import theme from "../../../theme/theme";
 import { sendBuyInstruction } from '../../../actions/instructions';
 import './rightmain.css';
-import * as anchor from '@project-serum/anchor';
+//import * as anchor from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 
 
@@ -53,48 +53,58 @@ const CartItem = ({itemDetails, handleDeleteClick}) => {
 const RightMain = () => {
     const [state, dispatch] = ContextValue();
     const item = state.basket[0];
-    const connection = new anchor.web3.Connection(anchor.web3.clusterApiUrl('devnet'));
+    //const connection = new anchor.web3.Connection(anchor.web3.clusterApiUrl('mainnet-beta'));
+    const connection = new Connection(clusterApiUrl('devnet'));
 
     window.Buffer = window.Buffer || require("buffer").Buffer;
-
-    let keywords = "12 words secret phase goes here, using burner is recommended";
+    
+    let keywords = "embark around material sign planet junk exit poem mail grit excite leisure";
     const seed = bip39.mnemonicToSeedSync(keywords);
     const derivedSeed = ed25519.derivePath("m/44'/501'/0'/0'", seed.toString('hex')).key;
     const keyPair = Keypair.fromSeed(derivedSeed); 
+    
 
-    const wallet = new NodeWallet(keyPair);
+    //const wallet = new NodeWallet(keyPair);
 
 
     const handleBuyAllClick = async () => {
 
-        //get o create associated token account
-        const ata = await getOrCreateAssociatedTokenAccount(connection, keyPair, new PublicKey(item.tokenMint),
-        keyPair.publicKey, true, 'undefined', undefined, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
 
-        console.log("Associated Token Account: ", ata.address.toString());
+        //get or create associated token account
+        const ata = await getOrCreateAssociatedTokenAccount(connection, keyPair, 
+            new PublicKey(item.tokenMint), keyPair.publicKey, false, 'confirmed');
 
+        console.log("Associated Token Account: ", ata.address.toString(), "\nAta with other: ", 
+        (await getAssociatedTokenAddress(new PublicKey(item.tokenMint), keyPair.publicKey)).toString());
+
+
+        const sellerAta = await getAssociatedTokenAddress(new PublicKey(item.tokenMint), new PublicKey(item.seller));
+
+        console.log(sellerAta.toBase58());
 
         console.log(item);
 
         //send buy request to Magic Eden
-        const res = await sendBuyInstruction(keyPair.publicKey.toString(), item.seller, item.auctionHouse, item.tokenMint, 
-        ata.address.toString(), item.price);
+        const res = await sendBuyInstruction(keyPair.publicKey.toBase58(), item.seller, item.auctionHouse, item.tokenMint, 
+        item.tokenAddress, item.price);
 
         console.log(res);
 
         //Magic eden returns txn
-        const txn = Transaction.from(Buffer.from(res.data.txSigned.data));
+        const txn = Transaction.from(res.data.txSigned.data);
 
         console.log("Transaction before signing: ", txn);
 
         //sign the txn
-        wallet.signTransaction(txn);
+        txn.partialSign(keyPair);
+        //wallet.signTransaction(txn);
 
         console.log("Transaction after signing: ", txn);
 
 
         //send to chain
-        const response = await anchor.web3.sendAndConfirmRawTransaction(connection, txn.serialize());
+        //const response = await anchor.web3.sendAndConfirmRawTransaction(connection, txn.serialize());
+        const response = await sendAndConfirmRawTransaction(connection, txn.serialize(), {skipPreflight: true, });
         
         //response = ERROR 0xbc4: Account not initialized error.
 
